@@ -1,6 +1,0 @@
-/audio
-/node_modules
-/package-lock.json
-/store
-.env
-.gitignore
