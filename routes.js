@@ -3,12 +3,14 @@ const express = require('express');
 const Spotify = require("spotify-finder");
 const ytdl = require("ytdl-core");
 const ytsr = require("ytsr");
+
 const router = express.Router();
+require("dotenv").config();
 
 const client = new Spotify({
   consumer: {
-    key: "d461ee71d7ff43728151abf6d42604b3",
-    secret: "7d56885b77594f9b8654bb60e19fb45e"
+    key: process.env.key,
+    secret: process.env.secret
   }
 })
 
