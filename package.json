@@ -1,0 +1,14 @@
+{
+  "name": "spotify-dl",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "start": "node ./bin/www"
+  },
+  "dependencies": {
+    "express": "~4.16.1",
+    "spotify-finder": "^2.1.1",
+    "ytdl-core": "^4.11.2",
+    "ytsr": "^3.8.0"
+  }
+}
