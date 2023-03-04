@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "start": "ts-node src/index.ts",
-    "test": "jest"
+    "auth": "ts-node src/util/auth.ts \"d461ee71d7ff43728151abf6d42604b3\" \"26fad1782c9946ebbd7d0e87a2c93755\""
   },
   "dependencies": {
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
@@ -17,8 +17,8 @@
     "node-youtube-music": "^0.8.3",
     "qs": "^6.11.0",
     "sponsorblock-api": "^0.2.2",
-    "spotify-finder": "^2.1.1",
     "spotify-uri": "^3.0.3",
+    "spotify-web-api-node": "^5.0.2",
     "spottydl": "^0.1.6",
     "ytdl-core": "^4.11.2",
     "ytmusic-api": "^3.1.1",

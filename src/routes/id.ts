@@ -1,7 +1,7 @@
 // import zip from "adm-zip";
 import { Router } from "express";
-import { getTrack, getAlbum, Track } from "../util/Info";
-import { downloadTrack } from "../util/Download";
+import { getTrack, getAlbum, getPlaylist, Track, Playlist } from "../util/Info";
+import { downloadTrack, downloadPlaylist } from "../util/Download";
 
 function error(msg: unknown) {
 
@@ -36,6 +36,18 @@ router.get("/album/:albumId", async (req, res, next) => {
     console.log(album.data)
   } else {
     res.json(error(album.message));
+  }
+})
+
+router.get("/playlist/:playlistId", async (req, res, next) => {
+  const playlistId = req.params.playlistId;
+  if (playlistId === undefined) return res.json(error("Param playlistId not provided"));
+
+  const playlist = await getPlaylist(playlistId);
+  if (playlist.data) {
+    downloadPlaylist(playlist.data as Playlist, "./temp")
+  } else {
+    res.json(error(playlist.message));
   }
 })
 

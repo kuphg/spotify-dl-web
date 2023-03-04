@@ -1,23 +1,32 @@
-const Spotify = require("spotify-finder");
-import { searchMusics, searchPlaylists, listMusicsFromPlaylist } from "node-youtube-music";
+const Spotify = require("spotify-web-api-node");
+// import { searchMusics, searchPlaylists, listMusicsFromPlaylist } from "node-youtube-music";
+
 import { SponsorBlock } from "sponsorblock-api";
 import ytsr from "ytsr";
 
 const client = new Spotify({
-  consumer: {
-    key: process.env.key as string,
-    secret: process.env.secret as string
-  }
-})
+  clientId: process.env.key,
+  clientSecret: process.env.secret,
+});
+
+client.setAccessToken(process.env.token);
 
 export interface Response {
   message?: unknown;
-  data?: Track | Album
+  data?: Track | Album | Playlist
 }
 
 export interface AlbumTrack {
   name: string;
   id: string;
+}
+
+export interface PlaylistTrack {
+  coverUrl: string;
+  title: string;
+  artist: string;
+  year: string;
+  id: string | null;
 }
 
 export interface Track {
@@ -38,18 +47,27 @@ export interface Album {
   tracks: AlbumTrack[];
 }
 
-async function searchSong(str: string) {
-  console.log(str)
-  const a = await searchMusics(str);
-  console.log(a)
-  return a[0].youtubeId as string;
+export interface Playlist {
+  name: string;
+  tracks: PlaylistTrack[];
 }
 
-async function getSongsFromPlaylist(str: string) {
-  const playlist = await searchPlaylists(str, { onlyOfficialPlaylists: true });
-  const a = await listMusicsFromPlaylist(playlist[0].playlistId as string);
-  return a;
+async function searchSong(str: string) {
+  let id: string | null = null;
+  console.log(`search: ${str}`)
+  const a = await ytsr(str, { limit: 3 });
+
+  for (const item of a.items) {
+    if (item.type === "video") id = item.id;
+  }
+
+  return id;
 }
+
+// async function getSongsFromAlbum(str: string) {
+//   const results = await searchPlaylists(str, { onlyOfficialPlaylists: true });
+//   return await listMusicsFromPlaylist(results[0].playlistId as string);
+// }
 
 /**
  * Gets the track data, and related youtube video ID for the song
@@ -58,8 +76,7 @@ async function getSongsFromPlaylist(str: string) {
  */
 export async function getTrack(id: string): Promise<Response> {
   try {
-    console.log(await searchMusics("Levitating (feat. DaBaby) - Dua Lipa"))
-    const track = await client.getTrack(id);
+    const track = (await client.getTrack(id)).body;
     const data = {
       id: "",
       title: track.name,
@@ -70,7 +87,9 @@ export async function getTrack(id: string): Promise<Response> {
       year: track.album.release_date
     };
     
-    data.id = await searchSong(`${data.title} - ${track.artists[0].name}`);
+    const ytId = await searchSong(`${track.name} - ${track.artists[0].name}`);
+    if (!ytId) throw new Error("Could not find a valid video Id");
+    data.id = ytId;
     
     return {
       data
@@ -85,7 +104,7 @@ export async function getTrack(id: string): Promise<Response> {
 }
 
 /**
- * Gets the album data, including tracks. Note private playlists can't be fetched without an oauth token.
+ * Gets the album data, including tracks.
  * @param {string} id - The public album ID
  * @returns {Promise<Response>}
  */
@@ -101,14 +120,50 @@ export async function getAlbum(id: string): Promise<Response> {
     }
 
     // TODO: Use ytmusic api to scrape the playlist content for video ids.
-    console.log(album)
-    const songs = await getSongsFromPlaylist(`${album.name} ${album.artists[0].name}`);
+    const songs: any[] = [];//await getSongsFromAlbum(`${album.name} ${album.artists[0].name}`);
     data.tracks = songs.map((v) => {
       return {
         name: v.title || "No name",
         id: v.youtubeId as string
       }
     })
+
+    return {
+      data
+    }
+  } catch (error) {
+    console.log(error)
+    return {
+      message: error
+    }
+  }
+}
+
+/**
+ * Gets the playlist data, including tracks. Note private playlists can't be fetched without an oauth token.
+ * @param {string} id - The public playlist ID
+ * @returns {Promise<Response>}
+ */
+export async function getPlaylist(id: string): Promise<Response> {
+  try {
+    const playlist = (await client.getPlaylist(id)).body;
+    const data: Playlist = {
+      name: playlist.name,
+      tracks: []
+    }
+
+    for (const { track } of playlist.tracks.items) {
+      const ytId = await searchSong(`${track.name} - ${track.artists[0].name}`);
+      if (!ytId) console.log(`Failed to get ytId for ${track.name}`);
+
+      data.tracks.push({
+        id: ytId || null,
+        coverUrl: track.album.images[0].url,
+        artist: track.artists.map((a: { name: any; }) => a.name).join(", "),
+        year: track.album.release_date,
+        title: track.name
+      })
+    }
 
     return {
       data
